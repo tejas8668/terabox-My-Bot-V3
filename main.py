@@ -1,7 +1,7 @@
 import os
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
 import urllib.parse
 
 # Configure logging
@@ -92,6 +92,37 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
     else:
         await update.message.reply_text("Please send Me Only TeraBox Link.")
 
+# Define the /broadcast command handler
+async def broadcast(update: Update, context: CallbackContext) -> None:
+    logger.info("Received /broadcast command")
+    message = update.message.reply_to_message
+
+    if message:
+        total_users = len(users)
+        sent_count = 0
+        block_count = 0
+        fail_count = 0
+
+        for user_id in users:
+            try:
+                await context.bot.send_message(chat_id=user_id, text=message.text)
+                sent_count += 1
+            except Exception as e:
+                if 'blocked' in str(e):
+                    block_count += 1
+                else:
+                    fail_count += 1
+
+        await update.message.reply_text(
+            f"Broadcast completed!\n\n"
+            f"Total users: {total_users}\n"
+            f"Messages sent: {sent_count}\n"
+            f"Users blocked the bot: {block_count}\n"
+            f"Failed to send messages: {fail_count}"
+        )
+    else:
+        await update.message.reply_text("Please reply to a message with /broadcast to send it to all users.")
+
 def main() -> None:
     # Get the port from the environment variable or use default
     port = int(os.environ.get('PORT', 8080))  # Default to port 8080
@@ -108,6 +139,9 @@ def main() -> None:
 
     # Register the link handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
+
+    # Register the /broadcast command handler
+    app.add_handler(CommandHandler("broadcast", broadcast))
 
     # Run the bot using a webhook
     app.run_webhook(
