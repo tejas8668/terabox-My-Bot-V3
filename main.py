@@ -1,6 +1,6 @@
 import os
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
 import urllib.parse
 
@@ -105,7 +105,12 @@ async def broadcast(update: Update, context: CallbackContext) -> None:
 
         for user_id in users:
             try:
-                await context.bot.send_message(chat_id=user_id, text=message.text)
+                if message.photo:
+                    await context.bot.send_photo(chat_id=user_id, photo=message.photo[-1].file_id, caption=message.caption)
+                elif message.video:
+                    await context.bot.send_video(chat_id=user_id, video=message.video.file_id, caption=message.caption)
+                else:
+                    await context.bot.send_message(chat_id=user_id, text=message.text)
                 sent_count += 1
             except Exception as e:
                 if 'blocked' in str(e):
