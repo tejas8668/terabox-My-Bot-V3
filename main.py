@@ -89,8 +89,9 @@ async def users_count(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text("You Have No Rights To Use My Commands")
 
 async def handle_link(update: Update, context: CallbackContext) -> None:
+    user = update.effective_user
     # Check if user is admin
-    if update.effective_user.id in admin_ids:
+    if user.id in admin_ids:
         # Admin ko verify karne ki zaroorat na ho
         pass
     else:
