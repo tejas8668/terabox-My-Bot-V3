@@ -7,6 +7,8 @@ from pymongo import MongoClient
 from datetime import datetime, timedelta
 import requests
 
+# Add this at the top of the file
+VERIFICATION_REQUIRED = os.getenv('VERIFICATION_REQUIRED', 'true').lower() == 'true'
 
 admin_ids = [6025969005, 6018060368]
 
@@ -96,7 +98,7 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
         pass
     else:
         # User ko verify karne ki zaroorat hai
-        if not await check_verification(user.id):
+        if VERIFICATION_REQUIRED and not await check_verification(user.id):
             # User ko verify karne ki zaroorat hai
             btn = [
                 [InlineKeyboardButton("Verify", url=await get_token(user.id, context.bot.username))],
