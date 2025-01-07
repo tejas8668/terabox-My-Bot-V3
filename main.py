@@ -3,6 +3,14 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
 import urllib.parse
+from pymongo import MongoClient
+from datetime import datetime, timedelta
+
+# MongoDB connection
+MONGO_URI = os.getenv('MONGO_URI')  # Get MongoDB URI from environment variables
+client = MongoClient(MONGO_URI)
+db = client['terabox_bot']
+users_collection = db['users']
 
 # Configure logging
 logging.basicConfig(
@@ -23,14 +31,38 @@ async def start(update: Update, context: CallbackContext) -> None:
     logger.info("Received /start command")
     user = update.effective_user
 
-    # Add user to the set
-    users.add(user.id)
+    # Check if the start command includes a token (for verification)
+    if context.args:
+        token = context.args[0]
+        user_data = users_collection.find_one({"user_id": user.id, "token": token})
 
+        if user_data:
+            # Update the user's verification status
+            users_collection.update_one(
+                {"user_id": user.id},
+                {"$set": {"verified_until": datetime.now() + timedelta(days=1)}},
+                upsert=True
+            )
+            await update.message.reply_text(
+                "✅ **Verification Successful!**\n\n"
+                "You can now use the bot for the next 24 hours without any ads or restrictions.",
+                parse_mode='Markdown'
+            )
+        else:
+            await update.message.reply_text(
+                "❌ **Invalid Token!**\n\n"
+                "Please try verifying again.",
+                parse_mode='Markdown'
+            )
+        return
+
+    # If no token, send the welcome message
+    users.add(user.id)  # Add user to the in-memory set
     message = (
         f"New user started the bot:\n"
         f"Name: {user.full_name}\n"
         f"Username: @{user.username}\n"
-        f"User ID: {user.id}"
+        f"User   ID: {user.id}"
     )
     await context.bot.send_message(chat_id=CHANNEL_ID, text=message)
     await update.message.reply_photo(
@@ -52,45 +84,55 @@ async def users_count(update: Update, context: CallbackContext) -> None:
 
 # Define the link handler
 async def handle_link(update: Update, context: CallbackContext) -> None:
-    logger.info("Received message: %s", update.message.text)
-    user = update.effective_user
+   logger.info("Received message: %s", update.message.text)
+   user = update.effective_user
 
-    # Add user to the set
-    users.add(user.id)
+   # Check if the user is verified
+   if not await check_verification(user.id):
+       btn = [
+           [InlineKeyboardButton("Verify", url=await get_token(user.id, context.bot.username))],
+           [InlineKeyboardButton("How To Open Link & Verify", url="https://example.com/verify_tutorial")]
+       ]
+       await update.message.reply_text(
+           text="<b>You are not verified!\nKindly verify to continue!</b>",
+           parse_mode='HTML',
+           reply_markup=InlineKeyboardMarkup(btn)
+       )
+       return
 
-    original_link = update.message.text
+   # If verified, process the TeraBox link
+   original_link = update.message.text
 
-    # Check if the message contains an http or https link
-    if 'http://' in original_link or 'https://' in original_link:
-        parsed_link = urllib.parse.quote(original_link, safe='')
-        modified_link = f"https://streamterabox.blogspot.com/?q={parsed_link}&m=0"
-        modified_url = f"https://streamterabox.blogspot.com/2024/12/terabox-player.html?q={parsed_link}"
+   if 'http://' in original_link or 'https://' in original_link:
+       parsed_link = urllib.parse.quote(original_link, safe='')
+       modified_link = f"https://streamterabox.blogspot.com/?q={parsed_link}&m=0"
+       modified_url = f"https://streamterabox.blogspot.com/2024/12/terabox-player.html?q={parsed_link}"
 
-        # Create a button with the modified link
-        button = [
-            [InlineKeyboardButton("Stream Server 1", url=modified_link)],
-            [InlineKeyboardButton("Stream Server 2", url=modified_url)]
-        ]
-        reply_markup = InlineKeyboardMarkup(button)
+       # Create a button with the modified link
+       button = [
+           [InlineKeyboardButton("Stream Server 1", url=modified_link)],
+           [InlineKeyboardButton("Stream Server 2", url=modified_url)]
+       ]
+       reply_markup = InlineKeyboardMarkup(button)
 
-        # Send the user's details and message to the channel
-        user_message = (
-            f"User message:\n"
-            f"Name: {user.full_name}\n"
-            f"Username: @{user.username}\n"
-            f"User ID: {user.id}\n"
-            f"Message: {original_link}"
-        )
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=user_message)
+       # Send the user's details and message to the channel
+       user_message = (
+           f"User  message:\n"
+           f"Name: {user.full_name}\n"
+           f"Username: @{user.username}\n"
+           f"User  ID: {user.id}\n"
+           f"Message: {original_link}"
+       )
+       await context.bot.send_message(chat_id=CHANNEL_ID, text=user_message)
 
-        # Send the message with the link, copyable link, and button
-        await update.message.reply_text(
-            f"👇👇 YOUR VIDEO LINK IS READY, USE THESE SERVERS 👇👇\n\n♥ 👇Your Stream Link👇 ♥\n",
-            reply_markup=reply_markup,
-            parse_mode='Markdown'
-        )
-    else:
-        await update.message.reply_text("Please send Me Only TeraBox Link.")
+       # Send the message with the link, copyable link, and button
+       await update.message.reply_text(
+           f"👇👇 YOUR VIDEO LINK IS READY, USE THESE SERVERS 👇👇\n\n♥ 👇Your Stream Link👇 ♥\n",
+           reply_markup=reply_markup,
+           parse_mode='Markdown'
+       )
+   else:
+       await update.message.reply_text("Please send Me Only TeraBox Link.")
 
 # Define the /broadcast command handler
 async def broadcast(update: Update, context: CallbackContext) -> None:
@@ -128,6 +170,22 @@ async def broadcast(update: Update, context: CallbackContext) -> None:
     else:
         await update.message.reply_text("Please reply to a message with /broadcast to send it to all users.")
 
+
+async def check_verification(user_id: int) -> bool:
+    user = users_collection.find_one({"user_id": user_id})
+    if user and user.get("verified_until", datetime.min) > datetime.now():
+        return True
+    return False
+
+async def get_token(user_id: int, bot_username: str) -> str:
+    token = os.urandom(16).hex()  # Generate a random token
+    users_collection.update_one(
+        {"user_id": user_id},
+        {"$set": {"token": token, "verified_until": datetime.min}},  # Reset verified_until to min
+        upsert=True
+    )
+    return f"https://telegram.me/{bot_username}?start={token}"
+
 def main() -> None:
     # Get the port from the environment variable or use default
     port = int(os.environ.get('PORT', 8080))  # Default to port 8080
@@ -142,6 +200,8 @@ def main() -> None:
     # Register the /users command handler
     app.add_handler(CommandHandler("users", users_count))
 
+    # Register the link handler
+    app.add ```python
     # Register the link handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
 
