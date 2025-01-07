@@ -103,7 +103,13 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
                 [InlineKeyboardButton("How To Open Link & Verify", url="https://example.com/verify_tutorial")]
             ]
             await update.message.reply_text(
-                text="<b>You are not verified!\nKindly verify to continue!</b>",
+                text="🚨 <b>Token Expired!</b>\n\n"
+                     "<b>Timeout: 24 hours</b>\n\n"
+                     "Your access token has expired. Verify it to continue using the bot!\n\n"
+                     "<b>🔑 Why Tokens?</b>\n\n"
+                     "Tokens unlock premium features with a quick ad process. Enjoy 24 hours of uninterrupted access! 🌟\n\n"
+                     "<b>👉 Tap below to verify your token.</b>\n\n"
+                     "Thank you for your support! ❤️",
                 parse_mode='HTML',
                 reply_markup=InlineKeyboardMarkup(btn)
             )
