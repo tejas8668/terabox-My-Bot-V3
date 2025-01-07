@@ -7,6 +7,9 @@ from pymongo import MongoClient
 from datetime import datetime, timedelta
 import requests
 
+
+admin_ids = os.getenv('ADMIN_IDS').split()
+
 # MongoDB connection
 MONGO_URI = os.getenv('MONGO_URI')  # Get MongoDB URI from environment variables
 client = MongoClient(MONGO_URI)
@@ -79,97 +82,102 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 # Define the /users command handler
 async def users_count(update: Update, context: CallbackContext) -> None:
-    logger.info("Received /users command")
-    user_count = len(users)
-    await update.message.reply_text(f"Total users who have interacted with the bot: {user_count}")
+    if update.effective_user.id in admin_ids:
+        user_count = len(users)
+        await update.message.reply_text(f"Total users who have interacted with the bot: {user_count}")
+    else:
+        await update.message.reply_text("You Have No Rights To Use My Commands")
 
-# Define the link handler
 async def handle_link(update: Update, context: CallbackContext) -> None:
-   logger.info("Received message: %s", update.message.text)
-   user = update.effective_user
+    # Check if user is admin
+    if update.effective_user.id in admin_ids:
+        # Admin ko verify karne ki zaroorat na ho
+        pass
+    else:
+        # User ko verify karne ki zaroorat hai
+        if not await check_verification(user.id):
+            # User ko verify karne ki zaroorat hai
+            btn = [
+                [InlineKeyboardButton("Verify", url=await get_token(user.id, context.bot.username))],
+                [InlineKeyboardButton("How To Open Link & Verify", url="https://example.com/verify_tutorial")]
+            ]
+            await update.message.reply_text(
+                text="<b>You are not verified!\nKindly verify to continue!</b>",
+                parse_mode='HTML',
+                reply_markup=InlineKeyboardMarkup(btn)
+            )
+            return
 
-   # Check if the user is verified
-   if not await check_verification(user.id):
-       btn = [
-           [InlineKeyboardButton("Verify", url=await get_token(user.id, context.bot.username))],
-           [InlineKeyboardButton("How To Open Link & Verify", url="https://example.com/verify_tutorial")]
-       ]
-       await update.message.reply_text(
-           text="<b>You are not verified!\nKindly verify to continue!</b>",
-           parse_mode='HTML',
-           reply_markup=InlineKeyboardMarkup(btn)
-       )
-       return
+    # Check if user sent a link
+    if update.message.text.startswith('http://') or update.message.text.startswith('https://'):
+        # User sent a link
+        original_link = update.message.text
+        parsed_link = urllib.parse.quote(original_link, safe='')
+        modified_link = f"https://streamterabox.blogspot.com/?q={parsed_link}&m=0"
+        modified_url = f"https://streamterabox.blogspot.com/2024/12/terabox-player.html?q={parsed_link}"
 
-   # If verified, process the TeraBox link
-   original_link = update.message.text
+        # Create a button with the modified link
+        button = [
+            [InlineKeyboardButton("Stream Server 1", url=modified_link)],
+            [InlineKeyboardButton("Stream Server 2", url=modified_url)]
+        ]
+        reply_markup = InlineKeyboardMarkup(button)
 
-   if 'http://' in original_link or 'https://' in original_link:
-       parsed_link = urllib.parse.quote(original_link, safe='')
-       modified_link = f"https://streamterabox.blogspot.com/?q={parsed_link}&m=0"
-       modified_url = f"https://streamterabox.blogspot.com/2024/12/terabox-player.html?q={parsed_link}"
+        # Send the user's details and message to the channel
+        user_message = (
+            f"User   message:\n"
+            f"Name: {update.effective_user.full_name}\n"
+            f"Username: @{update.effective_user.username}\n"
+            f"User   ID: {update.effective_user.id}\n"
+            f"Message: {original_link}"
+        )
+        await context.bot.send_message(chat_id=os.getenv('CHANNEL_ID'), text=user_message)
 
-       # Create a button with the modified link
-       button = [
-           [InlineKeyboardButton("Stream Server 1", url=modified_link)],
-           [InlineKeyboardButton("Stream Server 2", url=modified_url)]
-       ]
-       reply_markup = InlineKeyboardMarkup(button)
-
-       # Send the user's details and message to the channel
-       user_message = (
-           f"User  message:\n"
-           f"Name: {user.full_name}\n"
-           f"Username: @{user.username}\n"
-           f"User  ID: {user.id}\n"
-           f"Message: {original_link}"
-       )
-       await context.bot.send_message(chat_id=CHANNEL_ID, text=user_message)
-
-       # Send the message with the link, copyable link, and button
-       await update.message.reply_text(
-           f"👇👇 YOUR VIDEO LINK IS READY, USE THESE SERVERS 👇👇\n\n♥ 👇Your Stream Link👇 ♥\n",
-           reply_markup=reply_markup,
-           parse_mode='Markdown'
-       )
-   else:
-       await update.message.reply_text("Please send Me Only TeraBox Link.")
+        # Send the message with the link, copyable link, and button
+        await update.message.reply_text(
+            f"👇👇 YOUR VIDEO LINK IS READY, USE THESE SERVERS 👇👇\n\n♥ 👇Your Stream Link👇 ♥\n",
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+    else:
+        await update.message.reply_text("Please send Me Only TeraBox Link.")
 
 # Define the /broadcast command handler
 async def broadcast(update: Update, context: CallbackContext) -> None:
-    logger.info("Received /broadcast command")
-    message = update.message.reply_to_message
+    if update.effective_user.id in admin_ids:
+        message = update.message.reply_to_message
+        if message:
+            total_users = len(users)
+            sent_count = 0
+            block_count = 0
+            fail_count = 0
 
-    if message:
-        total_users = len(users)
-        sent_count = 0
-        block_count = 0
-        fail_count = 0
+            for user_id in users:
+                try:
+                    if message.photo:
+                        await context.bot.send_photo(chat_id=user_id, photo=message.photo[-1].file_id, caption=message.caption)
+                    elif message.video:
+                        await context.bot.send_video(chat_id=user_id, video=message.video.file_id, caption=message.caption)
+                    else:
+                        await context.bot.send_message(chat_id=user_id, text=message.text)
+                    sent_count += 1
+                except Exception as e:
+                    if 'blocked' in str(e):
+                        block_count += 1
+                    else:
+                        fail_count += 1
 
-        for user_id in users:
-            try:
-                if message.photo:
-                    await context.bot.send_photo(chat_id=user_id, photo=message.photo[-1].file_id, caption=message.caption)
-                elif message.video:
-                    await context.bot.send_video(chat_id=user_id, video=message.video.file_id, caption=message.caption)
-                else:
-                    await context.bot.send_message(chat_id=user_id, text=message.text)
-                sent_count += 1
-            except Exception as e:
-                if 'blocked' in str(e):
-                    block_count += 1
-                else:
-                    fail_count += 1
-
-        await update.message.reply_text(
-            f"Broadcast completed!\n\n"
-            f"Total users: {total_users}\n"
-            f"Messages sent: {sent_count}\n"
-            f"Users blocked the bot: {block_count}\n"
-            f"Failed to send messages: {fail_count}"
-        )
+            await update.message.reply_text(
+                f"Broadcast completed!\n\n"
+                f"Total users: {total_users}\n"
+                f"Messages sent: {sent_count}\n"
+                f"Users blocked the bot: {block_count}\n"
+                f"Failed to send messages: {fail_count}"
+            )
+        else:
+            await update.message.reply_text("Please reply to a message with /broadcast to send it to all users.")
     else:
-        await update.message.reply_text("Please reply to a message with /broadcast to send it to all users.")
+        await update.message.reply_text("You Have No Rights To Use My Commands")
 
 
 async def check_verification(user_id: int) -> bool:
