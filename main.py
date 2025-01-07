@@ -178,13 +178,36 @@ async def check_verification(user_id: int) -> bool:
     return False
 
 async def get_token(user_id: int, bot_username: str) -> str:
-    token = os.urandom(16).hex()  # Generate a random token
+    # Generate a random token
+    token = os.urandom(16).hex()
+    # Update user's verification status in database
     users_collection.update_one(
         {"user_id": user_id},
         {"$set": {"token": token, "verified_until": datetime.min}},  # Reset verified_until to min
         upsert=True
     )
-    return f"https://telegram.me/{bot_username}?start={token}"
+    # Create verification link
+    verification_link = f"https://telegram.me/{bot_username}?start={token}"
+    # Shorten verification link using shorten_url_link function
+    shortened_link = shorten_url_link(verification_link)
+    return shortened_link
+
+def shorten_url_link(url):
+    api_url = 'https://clickspay.in/api'
+    api_key = '2be0849743f9dae76487a66551105da32b68165f'
+    params = {
+        'api': api_key,
+        'url': url
+    }
+    # Yahan pe custom certificate bundle ka path specify karo
+    response = requests.get(api_url, params=params, verify=False)
+    if response.status_code == 200:
+        data = response.json()
+        if data['status'] == 'success':
+            logger.info(f"Adrinolinks shortened URL: {data['shortenedUrl']}")
+            return data['shortenedUrl']
+    logger.error(f"Failed to shorten URL with Adrinolinks: {url}")
+    return url
 
 def main() -> None:
     # Get the port from the environment variable or use default
@@ -199,7 +222,9 @@ def main() -> None:
 
     # Register the /users command handler
     app.add_handler(CommandHandler("users", users_count))
-    
+
+    # Register the link handler
+    app.add ```python
     # Register the link handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
 
