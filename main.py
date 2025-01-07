@@ -100,7 +100,7 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
             # User ko verify karne ki zaroorat hai
             btn = [
                 [InlineKeyboardButton("Verify", url=await get_token(user.id, context.bot.username))],
-                [InlineKeyboardButton("How To Open Link & Verify", url="https://example.com/verify_tutorial")]
+                [InlineKeyboardButton("How To Open Link & Verify", url="https://t.me/how_to_download_0011")]
             ]
             await update.message.reply_text(
                 text="🚨 <b>Token Expired!</b>\n\n"
