@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import requests
 
 
-admin_ids = os.getenv('ADMIN_IDS').split()
+admin_ids = [6025969005, 6018060368]
 
 # MongoDB connection
 MONGO_URI = os.getenv('MONGO_URI')  # Get MongoDB URI from environment variables
