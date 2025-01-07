@@ -199,9 +199,7 @@ def main() -> None:
 
     # Register the /users command handler
     app.add_handler(CommandHandler("users", users_count))
-
-    # Register the link handler
-    app.add ```python
+    
     # Register the link handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
 
