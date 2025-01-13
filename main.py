@@ -130,7 +130,7 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
         button = [
             [InlineKeyboardButton("Stream Server 1", url=modified_link)],
             [InlineKeyboardButton("Stream Server 2", url=modified_url)],
-            [InlineKeyboardButton("🎬 Watch in Mini App", web_app=WebAppInfo(url=watch_url))]
+            [InlineKeyboardButton("Watch in Mini App", url=watch_url)]
         ]
         reply_markup = InlineKeyboardMarkup(button)
 
