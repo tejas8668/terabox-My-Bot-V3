@@ -92,15 +92,14 @@ async def users_count(update: Update, context: CallbackContext) -> None:
 
 async def handle_link(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
-
     # Check if user is admin
     if user.id in admin_ids:
-        # Admins bypass verification
+        # Admin ko verify karne ki zaroorat na ho
         pass
     else:
-        # Check if user needs verification
+        # User ko verify karne ki zaroorat hai
         if VERIFICATION_REQUIRED and not await check_verification(user.id):
-            # Prompt user to verify
+            # User ko verify karne ki zaroorat hai
             btn = [
                 [InlineKeyboardButton("Verify", url=await get_token(user.id, context.bot.username))],
                 [InlineKeyboardButton("How To Open Link & Verify", url="https://t.me/how_to_download_0011")]
@@ -122,24 +121,11 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
     if update.message.text.startswith('http://') or update.message.text.startswith('https://'):
         # User sent a link
         original_link = update.message.text
+        parsed_link = urllib.parse.quote(original_link, safe='')
+        modified_link = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
+        modified_url = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
 
-        # Check if the link is a Telegram start link
-        if "t.me" in original_link and "?start=" in original_link:
-            # Extract the token from the Telegram start link
-            token = original_link.split("?start=")[1]
-
-            # Construct the new link
-            new_link = f"https://terafileshare.com/s/{token}"
-            parsed_link = urllib.parse.quote(new_link, safe='')
-            modified_link = f"https://teraboxstreamer.blogspot.com/?q={parsed_link}&m=0"
-            modified_url = f"https://teraboxstreamer.blogspot.com/2025/01/terabox-streamer.html?q={parsed_link}"
-        else:
-            # Handle regular TeraBox links
-            parsed_link = urllib.parse.quote(original_link, safe='')
-            modified_link = f"https://teraboxstreamer.blogspot.com/?q={parsed_link}&m=0"
-            modified_url = f"https://teraboxstreamer.blogspot.com/2025/01/terabox-streamer.html?q={parsed_link}"
-
-        # Create buttons with the modified links
+        # Create a button with the modified link
         button = [
             [InlineKeyboardButton("Stream Server 1", url=modified_link)],
             [InlineKeyboardButton("Stream Server 2", url=modified_url)]
@@ -148,10 +134,10 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
 
         # Send the user's details and message to the channel
         user_message = (
-            f"User  message:\n"
+            f"User   message:\n"
             f"Name: {update.effective_user.full_name}\n"
             f"Username: @{update.effective_user.username}\n"
-            f"User  ID: {update.effective_user.id}\n"
+            f"User   ID: {update.effective_user.id}\n"
             f"Message: {original_link}"
         )
         await context.bot.send_message(chat_id=os.getenv('CHANNEL_ID'), text=user_message)
@@ -244,7 +230,7 @@ def shorten_url_link(url):
 def main() -> None:
     # Get the port from the environment variable or use default
     port = int(os.environ.get('PORT', 8080))  # Default to port 8080
-    webhook_url = f"https://accurate-cordula-imdb07-87daeb39.koyeb.app/{TOKEN}"  # Replace with your server URL
+    webhook_url = f"https://total-jessalyn-toxiccdeveloperr-36046375.koyeb.app/{TOKEN}"  # Replace with your server URL
 
     # Create the Application and pass it your bot's token
     app = ApplicationBuilder().token(TOKEN).build()
