@@ -6,7 +6,7 @@ import urllib.parse
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 import requests
-
+from pyrogram.types import WebAppInfo
 # Add this at the top of the file
 VERIFICATION_REQUIRED = os.getenv('VERIFICATION_REQUIRED', 'false').lower() == 'true'
 
