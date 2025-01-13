@@ -124,11 +124,13 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
         parsed_link = urllib.parse.quote(original_link, safe='')
         modified_link = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
         modified_url = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
+        watch_url = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={original_link}"
 
         # Create a button with the modified link
         button = [
             [InlineKeyboardButton("Stream Server 1", url=modified_link)],
-            [InlineKeyboardButton("Stream Server 2", url=modified_url)]
+            [InlineKeyboardButton("Stream Server 2", url=modified_url)],
+            [InlineKeyboardButton("🎬 Watch in Mini App", web_app=WebAppInfo(url=watch_url))]
         ]
         reply_markup = InlineKeyboardMarkup(button)
 
