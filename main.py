@@ -36,6 +36,10 @@ async def start(update: Update, context: CallbackContext) -> None:
 
     # Check if the start command includes a token (for verification)
     if context.args:
+        text = update.message.text
+        if text.startswith("/start terabox-"):
+            await handle_terabox_link(update, context)
+            return
         token = context.args[0]
         user_data = users_collection.find_one({"user_id": user.id, "token": token})
 
@@ -343,6 +347,25 @@ async def next_users(update: Update, context: CallbackContext) -> None:
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text("Click 'Next' to view more users", reply_markup=reply_markup)
     
+    async def handle_terabox_link(update: Update, context: CallbackContext) -> None:
+    text = update.message.text
+    if text.startswith("/start terabox-"):
+        link_text = text.replace("/start terabox-", "")
+        link = f"https://terabox.com/s/{link_text}"
+        linkb = f"https://terafileshare.com/s/{link_text}"
+
+        button = [
+            [InlineKeyboardButton("Stream Server 1", url=link)],
+            [InlineKeyboardButton("Stream Server 2", url=linkb)]
+        ]
+        reply_markup = InlineKeyboardMarkup(button)
+
+        await update.message.reply_text(
+            f"👇👇 YOUR VIDEO LINK IS READY, USE THESE SERVERS 👇👇\n\n♥ 👇Your Stream Link👇 ♥\n",
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+        
 def main() -> None:
     # Get the port from the environment variable or use default
     port = int(os.environ.get('PORT', 8080))  # Default to port 8080
