@@ -353,10 +353,12 @@ async def handle_terabox_link(update: Update, context: CallbackContext) -> None:
         link_text = text.replace("/start terabox-", "")
         link = f"https://terabox.com/s/{link_text}"
         linkb = f"https://terafileshare.com/s/{link_text}"
+        slink = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={link}"
+        slinkb = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={linkb}"
 
         button = [
-            [InlineKeyboardButton("Stream Server 1", url=link)],
-            [InlineKeyboardButton("Stream Server 2", url=linkb)]
+            [InlineKeyboardButton("Stream Server 1", url=slink)],
+            [InlineKeyboardButton("Stream Server 2", url=slinkb)]
         ]
         reply_markup = InlineKeyboardMarkup(button)
 
