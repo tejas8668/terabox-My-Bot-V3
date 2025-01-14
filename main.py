@@ -72,8 +72,10 @@ async def start(update: Update, context: CallbackContext) -> None:
         f"User   ID: {user.id}"
     )
     await context.bot.send_message(chat_id=CHANNEL_ID, text=message)
+     # Corrected photo URL
+    photo_url = 'https://ik.imagekit.io/dvnhxw9vq/unnamed.png?updatedAt=1735280750258'
     await update.message.reply_photo(
-        photo='https://ik.imagekit.io /dvnhxw9vq/unnamed.png?updatedAt=1735280750258',  # Replace with your image URL
+        photo=photo_url,
         caption=(
             "👋 **ℍ𝕖𝕝𝕝𝕠 𝔻𝕖𝕒𝕣!**\n\n"
             "SEND ME ANY TERABOX LINK, I WILL SEND YOU DIRECT STREAM LINK WITHOUT TERABOX LOGIN OR ANY ADS​\n\n"
