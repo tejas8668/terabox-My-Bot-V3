@@ -72,7 +72,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         f"User   ID: {user.id}"
     )
     await context.bot.send_message(chat_id=CHANNEL_ID, text=message)
-     # Corrected photo URL
+    # Corrected photo URL
     photo_url = 'https://ik.imagekit.io/dvnhxw9vq/unnamed.png?updatedAt=1735280750258'
     await update.message.reply_photo(
         photo=photo_url,
@@ -88,7 +88,8 @@ async def start(update: Update, context: CallbackContext) -> None:
 # Define the /users command handler
 async def users_count(update: Update, context: CallbackContext) -> None:
     if update.effective_user.id in admin_ids:
-        user_count = len(users)
+        # Count the number of users in the MongoDB collection
+        user_count = users_collection.count_documents({})
         await update.message.reply_text(f"Total users who have interacted with the bot: {user_count}")
     else:
         await update.message.reply_text("You Have No Rights To Use My Commands")
