@@ -347,7 +347,7 @@ async def next_users(update: Update, context: CallbackContext) -> None:
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text("Click 'Next' to view more users", reply_markup=reply_markup)
     
-    async def handle_terabox_link(update: Update, context: CallbackContext) -> None:
+async def handle_terabox_link(update: Update, context: CallbackContext) -> None:
     text = update.message.text
     if text.startswith("/start terabox-"):
         link_text = text.replace("/start terabox-", "")
