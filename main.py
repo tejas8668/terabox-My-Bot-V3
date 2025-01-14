@@ -291,48 +291,37 @@ async def userss(update: Update, context: CallbackContext) -> None:
         for i, user in enumerate(users):
             name = user.get("full_name", "N/A")
             username = user.get("username", "N/A")
-            message += f"<b>Name:</b> {name}\n"
-            message += f"<b>Username:</b> @{username}\n\n"
+            message += f"👤 **Name:** {name}\n"
+            message += f"🔗 **Username:** @{username}\n\n"
 
-            # Send the message in chunks of 5 users
-            if (i + 1) % 5 == 0:
-                await update.message.reply_text(message, parse_mode='HTML')
-                message = ""
+        # Send the message with user details and a "Next" button
+        keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(message, parse_mode='Markdown', reply_markup=reply_markup)
 
-        # Send the remaining users
-        if message:
-            await update.message.reply_text(message, parse_mode='HTML')
-    else:
-        await update.message.reply_text("You Have No Rights To Use My Commands.")
-        
-# Define the callback handler for the "Next" button
-async def next_batch(update: Update, context: CallbackContext) -> None:
+async def next_users(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
 
-    # Extract the current page number from the callback data
-    current_page = int(query.data.split("_")[1])
-
     # Fetch the next 100 users
-    users = list(users_collection.find({}, {"full_name": 1, "username": 1}).skip(current_page * 100).limit(100))
+    users = list(users_collection.find({}, {"full_name": 1, "username": 1}).skip(100).limit(100))
 
     if not users:
-        await query.edit_message_text("No more users to display.")
+        await query.edit_message_text("No more users found in the database.")
         return
 
     # Prepare the message with user details
-    message = f"📝 **User  List (Batch {current_page + 1}):**\n\n"
-    for user in users:
+    message = ""
+    for i, user in enumerate(users):
         name = user.get("full_name", "N/A")
         username = user.get("username", "N/A")
         message += f"👤 **Name:** {name}\n"
         message += f"🔗 **Username:** @{username}\n\n"
 
-    # Add a "Next" button for the next batch
-    keyboard = [[InlineKeyboardButton("Next ➡️", callback_data=f"next_{current_page + 1}")]]
+    # Send the message with user details and a "Next" button
+    keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+    await query.edit_message_text(message, parse_mode='Markdown', reply_markup=reply_markup)
 
 def main() -> None:
     # Get the port from the environment variable or use default
