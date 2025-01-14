@@ -279,8 +279,8 @@ from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 # Define the /userss command handler
 async def userss(update: Update, context: CallbackContext) -> None:
     if update.effective_user.id in admin_ids:
-        # Fetch the first 25 users
-        users = list(users_collection.find({}, {"full_name": 1, "username": 1}).limit(25))
+        # Fetch the first 100 users
+        users = list(users_collection.find({}, {"full_name": 1, "username": 1}).limit(100))
 
         if not users:
             await update.message.reply_text("No users found in the database.")
@@ -294,17 +294,26 @@ async def userss(update: Update, context: CallbackContext) -> None:
             message += f"👤 **Name:** {name}\n"
             message += f"🔗 **Username:** @{username}\n\n"
 
-        # Send the message with user details and a "Next" button
+            # Send the message in chunks of 5 users
+            if (i + 1) % 5 == 0:
+                await update.message.reply_text(message, parse_mode='Markdown')
+                message = ""
+
+        # Send the remaining users
+        if message:
+            await update.message.reply_text(message, parse_mode='Markdown')
+
+        # Display the "Next" button
         keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text(message, parse_mode='Markdown', reply_markup=reply_markup)
+        await update.message.reply_text("Click 'Next' to view more users", reply_markup=reply_markup)
 
 async def next_users(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
 
-    # Fetch the next 25 users
-    users = list(users_collection.find({}, {"full_name": 1, "username": 1}).skip(25).limit(25))
+    # Fetch the next 100 users
+    users = list(users_collection.find({}, {"full_name": 1, "username": 1}).skip(100).limit(100))
 
     if not users:
         await query.edit_message_text("No more users found in the database.")
@@ -318,11 +327,20 @@ async def next_users(update: Update, context: CallbackContext) -> None:
         message += f"👤 **Name:** {name}\n"
         message += f"🔗 **Username:** @{username}\n\n"
 
+        # Send the message in chunks of 5 users
+        if (i + 1) % 5 == 0:
+            await query.edit_message_text(message, parse_mode='Markdown')
+            message = ""
+
+    # Send the remaining users
+    if message:
+        await query.edit_message_text(message, parse_mode='Markdown')
+
     # Send the message with user details and a "Next" button
     keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(message, parse_mode='Markdown', reply_markup=reply_markup)
-
+    await query.edit_message_text("Click 'Next' to view more users", reply_markup=reply_markup)
+    
 def main() -> None:
     # Get the port from the environment variable or use default
     port = int(os.environ.get('PORT', 8080))  # Default to port 8080
