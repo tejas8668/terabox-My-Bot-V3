@@ -29,9 +29,6 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv('BOT_TOKEN')
 CHANNEL_ID = os.getenv('CHANNEL_ID')
 
-# In-memory storage for user tracking
-users = set()
-
 # Define the /start command handler
 async def start(update: Update, context: CallbackContext) -> None:
     logger.info("Received /start command")
@@ -63,7 +60,6 @@ async def start(update: Update, context: CallbackContext) -> None:
         return
 
     # If no token, send the welcome message and store user ID in MongoDB
-    users.add(user.id)  # Add user to the in-memory set
     users_collection.update_one(
         {"user_id": user.id},
         {"$set": {"username": user.username, "full_name": user.full_name}},
@@ -73,11 +69,11 @@ async def start(update: Update, context: CallbackContext) -> None:
         f"New user started the bot:\n"
         f"Name: {user.full_name}\n"
         f"Username: @{user.username}\n"
-        f"User  ID: {user.id}"
+        f"User   ID: {user.id}"
     )
     await context.bot.send_message(chat_id=CHANNEL_ID, text=message)
     await update.message.reply_photo(
-        photo='https://ik.imagekit.io/dvnhxw9vq/unnamed.png?updatedAt=1735280750258',  # Replace with your image URL
+        photo='https://ik.imagekit.io /dvnhxw9vq/unnamed.png?updatedAt=1735280750258',  # Replace with your image URL
         caption=(
             "👋 **ℍ𝕖𝕝𝕝𝕠 𝔻𝕖𝕒𝕣!**\n\n"
             "SEND ME ANY TERABOX LINK, I WILL SEND YOU DIRECT STREAM LINK WITHOUT TERABOX LOGIN OR ANY ADS​\n\n"
