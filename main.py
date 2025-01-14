@@ -172,11 +172,20 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
         parsed_link = urllib.parse.quote(original_link, safe='')
         modified_link = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
         modified_url = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
+        link_path = parsed_link.path
+
+        # Remove the leading '/' from the link path
+        link_path = link_path.lstrip('/')
+
+        # Split the link path by '/' and get the last part
+        link_id = link_path.split('/')[-1]
+        sharelink = f"https://t.me/share/url?url=https://t.me/MMPostEditorBot?start=terabox-{link_id}"
 
         # Create a button with the modified link
         button = [
             [InlineKeyboardButton("Stream Server 1", url=modified_link)],
-            [InlineKeyboardButton("Stream Server 2", url=modified_url)]
+            [InlineKeyboardButton("Stream Server 2", url=modified_url)],
+            [InlineKeyboardButton("Share This Video", url=sharelink)]
         ]
         reply_markup = InlineKeyboardMarkup(button)
 
