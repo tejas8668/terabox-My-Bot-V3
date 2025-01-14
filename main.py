@@ -287,21 +287,21 @@ async def userss(update: Update, context: CallbackContext) -> None:
             return
 
         # Prepare the message with user details
-        message = "📝 **User   List:**\n\n"
+        message = ""
         for i, user in enumerate(users):
             name = user.get("full_name", "N/A")
             username = user.get("username", "N/A")
-            message += f"👤 **Name:** {name}\n"
-            message += f"🔗 **Username:** @{username}\n\n"
+            message += f"<b>Name:</b> {name}\n"
+            message += f"<b>Username:</b> @{username}\n\n"
 
-            # Send the message in chunks of 10 users
-            if (i + 1) % 10 == 0:
-                await update.message.reply_text(message, parse_mode='Markdown')
+            # Send the message in chunks of 5 users
+            if (i + 1) % 5 == 0:
+                await update.message.reply_text(message, parse_mode='HTML')
                 message = ""
 
         # Send the remaining users
         if message:
-            await update.message.reply_text(message, parse_mode='Markdown')
+            await update.message.reply_text(message, parse_mode='HTML')
     else:
         await update.message.reply_text("You Have No Rights To Use My Commands.")
         
