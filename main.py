@@ -165,33 +165,38 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
     if update.message.text.startswith('http://') or update.message.text.startswith('https://'):
         # User sent a link
         original_link = update.message.text
-        parsed_link = urllib.parse.quote(original_link, safe='')
-        modified_link = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
-        modified_url = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
+        if "tera" in original_link.lower() and "box" in original_link.lower():
+            # Link contains both "tera" and "box"
+            parsed_link = urllib.parse.quote(original_link, safe='')
+            modified_link = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
+            modified_url = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
 
-        # Create a button with the modified link
-        button = [
-            [InlineKeyboardButton("Stream Server 1", url=modified_link)],
-            [InlineKeyboardButton("Stream Server 2", url=modified_url)]
-        ]
-        reply_markup = InlineKeyboardMarkup(button)
+            # Create a button with the modified link
+            button = [
+                [InlineKeyboardButton("Stream Server 1", url=modified_link)],
+                [InlineKeyboardButton("Stream Server 2", url=modified_url)]
+            ]
+            reply_markup = InlineKeyboardMarkup(button)
 
-        # Send the user's details and message to the channel
-        user_message = (
-            f"User   message:\n"
-            f"Name: {update.effective_user.full_name}\n"
-            f"Username: @{update.effective_user.username}\n"
-            f"User   ID: {update.effective_user.id}\n"
-            f"Message: {original_link}"
-        )
-        await context.bot.send_message(chat_id=os.getenv('CHANNEL_ID'), text=user_message)
+            # Send the user's details and message to the channel
+            user_message = (
+                f"User   message:\n"
+                f"Name: {update.effective_user.full_name}\n"
+                f"Username: @{update.effective_user.username}\n"
+                f"User   ID: {update.effective_user.id}\n"
+                f"Message: {original_link}"
+            )
+            await context.bot.send_message(chat_id=os.getenv('CHANNEL_ID'), text=user_message)
 
-        # Send the message with the link, copyable link, and button
-        await update.message.reply_text(
-            f"👇👇 YOUR VIDEO LINK IS READY, USE THESE SERVERS 👇👇\n\n♥ 👇Your Stream Link👇 ♥\n",
-            reply_markup=reply_markup,
-            parse_mode='Markdown'
-        )
+            # Send the message with the link, copyable link, and button
+            await update.message.reply_text(
+                f"👇👇 YOUR VIDEO LINK IS READY, USE THESE SERVERS 👇👇\n\n♥ 👇Your Stream Link👇 ♥\n",
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+        else:
+            # Link does not contain both "tera" and "box"
+            await update.message.reply_text("Please send Me Only TeraBox Link.")
     else:
         await update.message.reply_text("Please send Me Only TeraBox Link.")
 
