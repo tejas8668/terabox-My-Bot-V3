@@ -279,8 +279,8 @@ from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 # Define the /userss command handler
 async def userss(update: Update, context: CallbackContext) -> None:
     if update.effective_user.id in admin_ids:
-        # Fetch the first 100 users
-        users = list(users_collection.find({}, {"full_name": 1, "username": 1}).limit(10))
+        # Fetch the first 25 users
+        users = list(users_collection.find({}, {"full_name": 1, "username": 1}).limit(25))
 
         if not users:
             await update.message.reply_text("No users found in the database.")
@@ -291,8 +291,8 @@ async def userss(update: Update, context: CallbackContext) -> None:
         for i, user in enumerate(users):
             name = user.get("full_name", "N/A")
             username = user.get("username", "N/A")
-            message += f"👤 <b>Name:</b> {name}\n"
-            message += f"🔗 <b>Username:</b> @{username}\n\n"
+            message += f"👤 **Name:** {name}\n"
+            message += f"🔗 **Username:** @{username}\n\n"
 
         # Send the message with user details and a "Next" button
         keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
@@ -303,8 +303,8 @@ async def next_users(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
 
-    # Fetch the next 100 users
-    users = list(users_collection.find({}, {"full_name": 1, "username": 1}).skip(10).limit(10))
+    # Fetch the next 25 users
+    users = list(users_collection.find({}, {"full_name": 1, "username": 1}).skip(25).limit(25))
 
     if not users:
         await query.edit_message_text("No more users found in the database.")
@@ -315,8 +315,8 @@ async def next_users(update: Update, context: CallbackContext) -> None:
     for i, user in enumerate(users):
         name = user.get("full_name", "N/A")
         username = user.get("username", "N/A")
-        message += f"👤 <b>Name:</b> {name}\n"
-        message += f"🔗 <b>Username:</b> @{username}\n\n"
+        message += f"👤 **Name:** {name}\n"
+        message += f"🔗 **Username:** @{username}\n\n"
 
     # Send the message with user details and a "Next" button
     keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
