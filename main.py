@@ -291,8 +291,8 @@ async def userss(update: Update, context: CallbackContext) -> None:
         for i, user in enumerate(users):
             name = user.get("full_name", "N/A")
             username = user.get("username", "N/A")
-            message += f"👤 **Name:** {name}\n"
-            message += f"🔗 **Username:** @{username}\n\n"
+            message += f"👤 <b>Name:</b> {name}\n"
+            message += f"🔗 <b>Username:</b> @{username}\n\n"
 
         # Send the message with user details and a "Next" button
         keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
@@ -315,8 +315,8 @@ async def next_users(update: Update, context: CallbackContext) -> None:
     for i, user in enumerate(users):
         name = user.get("full_name", "N/A")
         username = user.get("username", "N/A")
-        message += f"👤 **Name:** {name}\n"
-        message += f"🔗 **Username:** @{username}\n\n"
+        message += f"👤 <b>Name:</b> {name}\n"
+        message += f"🔗 <b>Username:</b> @{username}\n\n"
 
     # Send the message with user details and a "Next" button
     keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
