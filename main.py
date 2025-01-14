@@ -168,7 +168,7 @@ async def broadcast(update: Update, context: CallbackContext) -> None:
             block_count = 0
             fail_count = 0
 
-            for user_data in all _users:
+            for user_data in all_users:
                 user_id = user_data['user_id']
                 try:
                     if message.photo:
