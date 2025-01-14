@@ -1,6 +1,6 @@
 import os
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, Inline
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
 import urllib.parse
 from pymongo import MongoClient
@@ -91,6 +91,35 @@ async def users_count(update: Update, context: CallbackContext) -> None:
         # Count the number of users in the MongoDB collection
         user_count = users_collection.count_documents({})
         await update.message.reply_text(f"Total users who have interacted with the bot: {user_count}")
+    else:
+        await update.message.reply_text("You Have No Rights To Use My Commands")
+
+async def stats(update: Update, context: CallbackContext) -> None:
+    if update.effective_user.id in admin_ids:
+        try:
+            # Get total users
+            total_users = users_collection.count_documents({})
+
+            # Get MongoDB database stats
+            db_stats = db.command("dbstats")
+
+            # Calculate used and free storage
+            used_storage_gb = db_stats['dataSize'] / (1024 ** 3)  # Convert bytes to GB
+            total_storage_gb = db_stats['fsTotalSize'] / (1024 ** 3)  # Convert bytes to GB
+            free_storage_gb = total_storage_gb - used_storage_gb
+
+            # Prepare the response message
+            message = (
+                f"📊 **Bot Statistics**\n\n"
+                f"👥 **Total Users:** {total_users}\n"
+                f"💾 **MongoDB Used Storage:** {used_storage_gb:.2f} GB\n"
+                f"🆓 **MongoDB Free Storage:** {free_storage_gb:.2f} GB\n"
+            )
+
+            await update.message.reply_text(message, parse_mode='Markdown')
+        except Exception as e:
+            logger.error(f"Error fetching stats: {e}")
+            await update.message.reply_text("❌ An error occurred while fetching stats.")
     else:
         await update.message.reply_text("You Have No Rights To Use My Commands")
 
@@ -234,6 +263,63 @@ def shorten_url_link(url):
     logger.error(f"Failed to shorten URL with Adrinolinks: {url}")
     return url
 
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+
+# Define the /userss command handler
+async def userss(update: Update, context: CallbackContext) -> None:
+    if update.effective_user.id in admin_ids:
+        # Fetch the first 100 users
+        users = list(users_collection.find({}, {"full_name": 1, "username": 1}).limit(100))
+        
+        if not users:
+            await update.message.reply_text("No users found in the database.")
+            return
+
+        # Prepare the message with user details
+        message = "📝 **User  List (Batch 1):**\n\n"
+        for user in users:
+            name = user.get("full_name", "N/A")
+            username = user.get("username", "N/A")
+            message += f"👤 **Name:** {name}\n"
+            message += f"🔗 **Username:** @{username}\n\n"
+
+        # Add a "Next" button
+        keyboard = [[InlineKeyboardButton("Next ➡️", callback_data="next_1")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+    else:
+        await update.message.reply_text("You Have No Rights To Use My Commands.")
+
+# Define the callback handler for the "Next" button
+async def next_batch(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()
+
+    # Extract the current page number from the callback data
+    current_page = int(query.data.split("_")[1])
+
+    # Fetch the next 100 users
+    users = list(users_collection.find({}, {"full_name": 1, "username": 1}).skip(current_page * 100).limit(100))
+
+    if not users:
+        await query.edit_message_text("No more users to display.")
+        return
+
+    # Prepare the message with user details
+    message = f"📝 **User  List (Batch {current_page + 1}):**\n\n"
+    for user in users:
+        name = user.get("full_name", "N/A")
+        username = user.get("username", "N/A")
+        message += f"👤 **Name:** {name}\n"
+        message += f"🔗 **Username:** @{username}\n\n"
+
+    # Add a "Next" button for the next batch
+    keyboard = [[InlineKeyboardButton("Next ➡️", callback_data=f"next_{current_page + 1}")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+
 def main() -> None:
     # Get the port from the environment variable or use default
     port = int(os.environ.get('PORT', 8080))  # Default to port 8080
@@ -246,7 +332,13 @@ def main() -> None:
     app.add_handler(CommandHandler("start", start))
 
     # Register the /users command handler
-    app.add_handler(CommandHandler("users", users_count))
+    app.add_handler(CommandHandler("totalusers", users_count))
+
+    # Register the /userss command handler
+    app.add_handler(CommandHandler("users", userss))
+
+    # Register the /stats command handler
+    app.add_handler(CommandHandler("stats", stats))
 
     # Register the link handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link))
