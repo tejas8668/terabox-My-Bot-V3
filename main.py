@@ -280,7 +280,7 @@ from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 async def userss(update: Update, context: CallbackContext) -> None:
     if update.effective_user.id in admin_ids:
         # Fetch the first 100 users
-        users = list(users_collection.find({}, {"full_name": 1, "username": 1}).limit(100))
+        users = list(users_collection.find({}, {"full_name": 1, "username": 1}).limit(10))
 
         if not users:
             await update.message.reply_text("No users found in the database.")
@@ -304,7 +304,7 @@ async def next_users(update: Update, context: CallbackContext) -> None:
     await query.answer()
 
     # Fetch the next 100 users
-    users = list(users_collection.find({}, {"full_name": 1, "username": 1}).skip(100).limit(100))
+    users = list(users_collection.find({}, {"full_name": 1, "username": 1}).skip(10).limit(10))
 
     if not users:
         await query.edit_message_text("No more users found in the database.")
