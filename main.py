@@ -291,17 +291,17 @@ async def userss(update: Update, context: CallbackContext) -> None:
         for i, user in enumerate(users):
             name = user.get("full_name", "N/A")
             username = user.get("username", "N/A")
-            message += f"👤 **Name:** {name}\n"
-            message += f"🔗 **Username:** @{username}\n\n"
+            message += f"<b>Name:</b> {name}\n"
+            message += f"<b>Username:</b> @{username}\n\n"
 
             # Send the message in chunks of 5 users
             if (i + 1) % 5 == 0:
-                await update.message.reply_text(message, parse_mode='Markdown')
+                await update.message.reply_text(message, parse_mode='HTML')
                 message = ""
 
         # Send the remaining users
         if message:
-            await update.message.reply_text(message, parse_mode='Markdown')
+            await update.message.reply_text(message, parse_mode='HTML')
 
         # Display the "Next" button
         keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
@@ -324,19 +324,19 @@ async def next_users(update: Update, context: CallbackContext) -> None:
     for i, user in enumerate(users):
         name = user.get("full_name", "N/A")
         username = user.get("username", "N/A")
-        message += f"👤 **Name:** {name}\n"
-        message += f"🔗 **Username:** @{username}\n\n"
+        message += f"<b>Name:</b> {name}\n"
+        message += f"<b>Username:</b> @{username}\n\n"
 
         # Send the message in chunks of 5 users
         if (i + 1) % 5 == 0:
-            await query.edit_message_text(message, parse_mode='Markdown')
+            await query.edit_message_text(message, parse_mode='HTML')
             message = ""
 
     # Send the remaining users
     if message:
-        await query.edit_message_text(message, parse_mode='Markdown')
+        await query.edit_message_text(message, parse_mode='HTML')
 
-    # Send the message with user details and a "Next" button
+    # Display the "Next" button
     keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text("Click 'Next' to view more users", reply_markup=reply_markup)
