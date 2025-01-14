@@ -111,9 +111,13 @@ async def stats(update: Update, context: CallbackContext) -> None:
                 total_storage_mb = db_stats['fsTotalSize'] / (1024 ** 2)  # Convert bytes to MB
                 free_storage_mb = total_storage_mb - used_storage_mb
             else:
+                total_storage_in_mb = 512
+
+                # Calculate free storage
+                free_storage_in_mb = total_storage_in_mb - used_storage_mb
                 # Fallback for environments where fsTotalSize is not available
                 total_storage_mb = "N/A"
-                free_storage_mb = "N/A"
+                free_storage_mb = free_storage_in_mb
 
             # Prepare the response message
             message = (
