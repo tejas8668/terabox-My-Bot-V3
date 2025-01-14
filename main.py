@@ -307,6 +307,8 @@ async def userss(update: Update, context: CallbackContext) -> None:
         keyboard = [[InlineKeyboardButton("Next", callback_data="next_users")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text("Click 'Next' to view more users", reply_markup=reply_markup)
+    else:
+        await update.message.reply_text("You Have No Rights To Use My Commands")
 
 async def next_users(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
