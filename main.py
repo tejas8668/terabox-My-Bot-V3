@@ -6,7 +6,7 @@ import urllib.parse
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 import requests
-from pyrogram.types import WebAppInfo
+
 # Add this at the top of the file
 VERIFICATION_REQUIRED = os.getenv('VERIFICATION_REQUIRED', 'false').lower() == 'true'
 
@@ -62,13 +62,18 @@ async def start(update: Update, context: CallbackContext) -> None:
             )
         return
 
-    # If no token, send the welcome message
+    # If no token, send the welcome message and store user ID in MongoDB
     users.add(user.id)  # Add user to the in-memory set
+    users_collection.update_one(
+        {"user_id": user.id},
+        {"$set": {"username": user.username, "full_name": user.full_name}},
+        upsert=True
+    )
     message = (
         f"New user started the bot:\n"
         f"Name: {user.full_name}\n"
         f"Username: @{user.username}\n"
-        f"User   ID: {user.id}"
+        f"User  ID: {user.id}"
     )
     await context.bot.send_message(chat_id=CHANNEL_ID, text=message)
     await update.message.reply_photo(
@@ -124,13 +129,11 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
         parsed_link = urllib.parse.quote(original_link, safe='')
         modified_link = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
         modified_url = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
-        watch_url = f"https://t.me/MMPostEditorBot?startapp=https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={original_link}"
 
         # Create a button with the modified link
         button = [
             [InlineKeyboardButton("Stream Server 1", url=modified_link)],
-            [InlineKeyboardButton("Stream Server 2", url=modified_url)],
-            [InlineKeyboardButton("Watch in Mini App", url=watch_url)]
+            [InlineKeyboardButton("Stream Server 2", url=modified_url)]
         ]
         reply_markup = InlineKeyboardMarkup(button)
 
@@ -158,12 +161,15 @@ async def broadcast(update: Update, context: CallbackContext) -> None:
     if update.effective_user.id in admin_ids:
         message = update.message.reply_to_message
         if message:
-            total_users = len(users)
+            # Fetch all user IDs from MongoDB
+            all_users = users_collection.find({}, {"user_id": 1})
+            total_users = users_collection.count_documents({})
             sent_count = 0
             block_count = 0
             fail_count = 0
 
-            for user_id in users:
+            for user_data in all _users:
+                user_id = user_data['user_id']
                 try:
                     if message.photo:
                         await context.bot.send_photo(chat_id=user_id, photo=message.photo[-1].file_id, caption=message.caption)
