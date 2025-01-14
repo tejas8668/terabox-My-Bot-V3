@@ -355,10 +355,12 @@ async def handle_terabox_link(update: Update, context: CallbackContext) -> None:
         linkb = f"https://terafileshare.com/s/{link_text}"
         slink = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={link}"
         slinkb = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={linkb}"
+        share = f"https://t.me/share/url?url=https://t.me/MMPostEditorBot?start=terabox-{link_text}"
 
         button = [
             [InlineKeyboardButton("Stream Server 1", url=slink)],
-            [InlineKeyboardButton("Stream Server 2", url=slinkb)]
+            [InlineKeyboardButton("Stream Server 2", url=slinkb)],
+            [InlineKeyboardButton("Share This Video", url=share)]
         ]
         reply_markup = InlineKeyboardMarkup(button)
 
