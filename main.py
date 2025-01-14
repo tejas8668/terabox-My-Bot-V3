@@ -281,14 +281,14 @@ async def userss(update: Update, context: CallbackContext) -> None:
     if update.effective_user.id in admin_ids:
         # Fetch the first 100 users
         users = list(users_collection.find({}, {"full_name": 1, "username": 1}).limit(100))
-        
+
         if not users:
             await update.message.reply_text("No users found in the database.")
             return
 
         # Prepare the message with user details
         message = "📝 **User  List (Batch 1):**\n\n"
-        for user in users:
+        for user in users[:10]:  # Display only the first 10 users
             name = user.get("full_name", "N/A")
             username = user.get("username", "N/A")
             message += f"👤 **Name:** {name}\n"
@@ -299,6 +299,18 @@ async def userss(update: Update, context: CallbackContext) -> None:
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
+
+        # Send the remaining users in a separate message
+        remaining_users = users[10:]
+        if remaining_users:
+            message = "📝 **User  List (Batch 2):**\n\n"
+            for user in remaining_users:
+                name = user.get("full_name", "N/A")
+                username = user.get("username", "N/A")
+                message += f"👤 **Name:** {name}\n"
+                message += f"🔗 **Username:** @{username}\n\n"
+
+            await update.message.reply_text(message, parse_mode='Markdown')
     else:
         await update.message.reply_text("You Have No Rights To Use My Commands.")
 
