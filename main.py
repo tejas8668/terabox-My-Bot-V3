@@ -287,33 +287,24 @@ async def userss(update: Update, context: CallbackContext) -> None:
             return
 
         # Prepare the message with user details
-        message = "📝 **User  List (Batch 1):**\n\n"
-        for user in users[:10]:  # Display only the first 10 users
+        message = "📝 **User   List:**\n\n"
+        for i, user in enumerate(users):
             name = user.get("full_name", "N/A")
             username = user.get("username", "N/A")
             message += f"👤 **Name:** {name}\n"
             message += f"🔗 **Username:** @{username}\n\n"
 
-        # Add a "Next" button
-        keyboard = [[InlineKeyboardButton("Next ➡️", callback_data="next_1")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+            # Send the message in chunks of 10 users
+            if (i + 1) % 10 == 0:
+                await update.message.reply_text(message, parse_mode='Markdown')
+                message = ""
 
-        await update.message.reply_text(message, reply_markup=reply_markup, parse_mode='Markdown')
-
-        # Send the remaining users in a separate message
-        remaining_users = users[10:]
-        if remaining_users:
-            message = "📝 **User  List (Batch 2):**\n\n"
-            for user in remaining_users:
-                name = user.get("full_name", "N/A")
-                username = user.get("username", "N/A")
-                message += f"👤 **Name:** {name}\n"
-                message += f"🔗 **Username:** @{username}\n\n"
-
+        # Send the remaining users
+        if message:
             await update.message.reply_text(message, parse_mode='Markdown')
     else:
         await update.message.reply_text("You Have No Rights To Use My Commands.")
-
+        
 # Define the callback handler for the "Next" button
 async def next_batch(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
