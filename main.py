@@ -1,6 +1,6 @@
 import os
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, Inline
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext, CallbackQueryHandler
 import urllib.parse
 from pymongo import MongoClient
@@ -103,17 +103,24 @@ async def stats(update: Update, context: CallbackContext) -> None:
             # Get MongoDB database stats
             db_stats = db.command("dbstats")
 
-            # Calculate used and free storage
-            used_storage_gb = db_stats['dataSize'] / (1024 ** 3)  # Convert bytes to GB
-            total_storage_gb = db_stats['fsTotalSize'] / (1024 ** 3)  # Convert bytes to GB
-            free_storage_gb = total_storage_gb - used_storage_gb
+            # Calculate used storage
+            used_storage_mb = db_stats['dataSize'] / (1024 ** 2)  # Convert bytes to MB
+
+            # Calculate total and free storage (if available)
+            if 'fsTotalSize' in db_stats:
+                total_storage_mb = db_stats['fsTotalSize'] / (1024 ** 2)  # Convert bytes to MB
+                free_storage_mb = total_storage_mb - used_storage_mb
+            else:
+                # Fallback for environments where fsTotalSize is not available
+                total_storage_mb = "N/A"
+                free_storage_mb = "N/A"
 
             # Prepare the response message
             message = (
                 f"📊 **Bot Statistics**\n\n"
                 f"👥 **Total Users:** {total_users}\n"
-                f"💾 **MongoDB Used Storage:** {used_storage_gb:.2f} GB\n"
-                f"🆓 **MongoDB Free Storage:** {free_storage_gb:.2f} GB\n"
+                f"💾 **MongoDB Used Storage:** {used_storage_mb:.2f} MB\n"
+                f"🆓 **MongoDB Free Storage:** {free_storage_mb if isinstance(free_storage_mb, str) else f'{free_storage_mb:.2f} MB'}\n"
             )
 
             await update.message.reply_text(message, parse_mode='Markdown')
