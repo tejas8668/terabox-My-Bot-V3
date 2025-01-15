@@ -17,6 +17,7 @@ MONGO_URI = os.getenv('MONGO_URI')  # Get MongoDB URI from environment variables
 client = MongoClient(MONGO_URI)
 db = client['terabox_bot']
 users_collection = db['users']
+refferal_collection = db['refferals']
 
 # Configure logging
 logging.basicConfig(
@@ -40,27 +41,52 @@ async def start(update: Update, context: CallbackContext) -> None:
         if text.startswith("/start terabox-"):
             await handle_terabox_link(update, context)
             return
-        token = context.args[0]
-        user_data = users_collection.find_one({"user_id": user.id, "token": token})
-
-        if user_data:
-            # Update the user's verification status
-            users_collection.update_one(
-                {"user_id": user.id},
-                {"$set": {"verified_until": datetime.now() + timedelta(days=1)}},
-                upsert=True
-            )
-            await update.message.reply_text(
-                "✅ **Verification Successful!**\n\n"
-                "You can now use the bot for the next 24 hours without any ads or restrictions.",
-                parse_mode='Markdown'
-            )
+        elif text.startswith("/start reffer-"):
+            refferal_id = text.replace("/start reffer-", "")
+            refferal_data = refferal_collection.find_one({"refferal_id": refferal_id})
+            if refferal_data:
+                user_id = update.effective_user.id
+                refferal_collection.update_one(
+                    {"refferal_id": refferal_id},
+                    {"$push": {"reffered_users": user_id}}
+                )
+                await update.message.reply_text(
+                    "Congratulations! You have been reffered by a user. You will get 24 hours of premium features for free."
+                )
+                # Send a message to the refferer with a button to activate premium features
+                refferer_id = refferal_data["user_id"]
+                await context.bot.send_message(
+                    chat_id=refferer_id,
+                    text="You have reffered a new user. You can activate your premium features now.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("Activate Now", callback_data="activate_premium")],
+                        [InlineKeyboardButton("Do it Later", callback_data="later")]
+                    ])
+                )
+            else:
+                await update.message.reply_text("Invalid refferal link.")
         else:
-            await update.message.reply_text(
-                "❌ **Invalid Token!**\n\n"
-                "Please try verifying again.",
-                parse_mode='Markdown'
-            )
+            token = context.args[0]
+            user_data = users_collection.find_one({"user_id": user.id, "token": token})
+
+            if user_data:
+                # Update the user's verification status
+                users_collection.update_one(
+                    {"user_id": user.id},
+                    {"$set": {"verified_until": datetime.now() + timedelta(days=1)}},
+                    upsert=True
+                )
+                await update.message.reply_text(
+                    "✅ **Verification Successful!**\n\n"
+                    "You can now use the bot for the next 24 hours without any ads or restrictions.",
+                    parse_mode='Markdown'
+                )
+            else:
+                await update.message.reply_text(
+                    "❌ **Invalid Token!**\n\n"
+                    "Please try verifying again.",
+                    parse_mode='Markdown'
+                )
         return
 
     # If no token, send the welcome message and store user ID in MongoDB
@@ -73,7 +99,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         f"New user started the bot:\n"
         f"Name: {user.full_name}\n"
         f"Username: @{user.username}\n"
-        f"User   ID: {user.id}"
+        f"User    ID: {user.id}"
     )
     await context.bot.send_message(chat_id=CHANNEL_ID, text=message)
     # Corrected photo URL
@@ -81,10 +107,13 @@ async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_photo(
         photo=photo_url,
         caption=(
-            "👋 **ℍ𝕖𝕝𝕝𝕠 𝔻𝕖𝕒𝕣!**\n\n"
-            "SEND ME ANY TERABOX LINK, I WILL SEND YOU DIRECT STREAM LINK WITHOUT TERABOX LOGIN OR ANY ADS​\n\n"
-            "**𝐈𝐦𝐩𝐨𝐫𝐭𝐚𝐧𝐭​​**\n\n"
-            "𝗨𝘀𝗲 𝗖𝗵𝗿𝗼𝗺𝗲 𝗙𝗼𝗿 𝗔𝗰𝗰𝗲𝘀𝘀 𝗠𝘆 𝗔𝗹𝗹 𝗳𝗲𝗮𝘁𝘂𝗿𝗲𝘀"
+            "👋 **Welcome to the TeraBox Online Player!** 🌟\n\n"
+        "Hello, dear user! I'm here to make your experience seamless and enjoyable.\n\n"
+        "✨ **What can I do for you?**\n"
+        "- Send me any TeraBox link, and I'll provide you with a direct streaming link without any ads!\n"
+        "- Enjoy uninterrupted access for 24 hours with a simple verification process.\n\n"
+        "🔑 **Ready to get started?** Just type your TeraBox link below, and let’s dive in!\n\n"
+        "Thank you for choosing TeraBox Online Player! ❤️"
         ),
         parse_mode='Markdown'
     )
@@ -165,43 +194,49 @@ async def handle_link(update: Update, context: CallbackContext) -> None:
             )
             return
 
-    # Check if user sent a link
-    if update.message.text.startswith('http://') or update.message.text.startswith('https://'):
-        # User sent a link
-        original_link = update.message.text
-        parsed_link = urllib.parse.quote(original_link, safe='')
-        modified_link = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
-        modified_url = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
-        link_parts = original_link.split('/')
-        link_id = link_parts[-1]
-        sharelink = f"https://t.me/share/url?url=https://t.me/MMPostEditorBot?start=terabox-{link_id}"
+    user_id = update.effective_user.id
+    user_data = users_collection.find_one({"user_id": user_id})
+    if user_data and user_data.get("premium_until", datetime.min) > datetime.now():
+        # User has premium features, proceed with the link handling
+        # Check if user sent a link
+        if update.message.text.startswith('http://') or update.message.text.startswith('https://'):
+            # User sent a link
+            original_link = update.message.text
+            parsed_link = urllib.parse.quote(original_link, safe='')
+            modified_link = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
+            modified_url = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={parsed_link}"
+            link_parts = original_link.split('/')
+            link_id = link_parts[-1]
+            sharelink = f"https://t.me/share/url?url=https://t.me/TeraBox_OnlineBot?start=terabox-{link_id}"
 
-        # Create a button with the modified link
-        button = [
-            [InlineKeyboardButton("Stream Server 1", url=modified_link)],
-            [InlineKeyboardButton("Stream Server 2", url=modified_url)],
-            [InlineKeyboardButton("Share This Video", url=sharelink)]
-        ]
-        reply_markup = InlineKeyboardMarkup(button)
+            # Create a button with the modified link
+            button = [
+                [InlineKeyboardButton("🌐Stream Server 1🌐", url=modified_link)],
+                [InlineKeyboardButton("🌐Stream Server 2🌐", url=modified_url)],
+                [InlineKeyboardButton("◀Share▶", url=sharelink)]
+            ]
+            reply_markup = InlineKeyboardMarkup(button)
 
-        # Send the user's details and message to the channel
-        user_message = (
-            f"User   message:\n"
-            f"Name: {update.effective_user.full_name}\n"
-            f"Username: @{update.effective_user.username}\n"
-            f"User   ID: {update.effective_user.id}\n"
-            f"Message: {original_link}"
-        )
-        await context.bot.send_message(chat_id=os.getenv('CHANNEL_ID'), text=user_message)
+            # Send the user's details and message to the channel
+            user_message = (
+                f"User     message:\n"
+                f"Name: {update.effective_user.full_name}\n"
+                f"Username: @{update.effective_user.username}\n"
+                f"User     ID: {update.effective_user.id}\n"
+                f"Message: {original_link}"
+            )
+            await context.bot.send_message(chat_id=os.getenv('CHANNEL_ID'), text=user_message)
 
-        # Send the message with the link, copyable link, and button
-        await update.message.reply_text(
-            f"👇👇 YOUR VIDEO LINK IS READY, USE THESE SERVERS 👇👇\n\n♥ 👇Your Stream Link👇 ♥\n",
-            reply_markup=reply_markup,
-            parse_mode='Markdown'
-        )
+            # Send the message with the link, copyable link, and button
+            await update.message.reply_text(
+                f"👇👇 YOUR VIDEO LINK IS READY, USE THESE SERVERS 👇👇\n\n♥ 👇Your Stream Link👇 ♥\n",
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+        else:
+            await update.message.reply_text("Please send Me Only TeraBox Link.")
     else:
-        await update.message.reply_text("Please send Me Only TeraBox Link.")
+        await update.message.reply_text("You need to activate premium features to use this service.")
 
 # Define the /broadcast command handler
 async def broadcast(update: Update, context: CallbackContext) -> None:
@@ -266,8 +301,8 @@ async def get_token(user_id: int, bot_username: str) -> str:
     return shortened_link
 
 def shorten_url_link(url):
-    api_url = 'https://clickspay.in/api'
-    api_key = 'bbcbd18b768b0a22ba0081b567af29d51b45f2aa'
+    api_url = 'https://arolinks.com/api'
+    api_key = '90bcb2590cca0a2b438a66e178f5e90fea2dc8b4'
     params = {
         'api': api_key,
         'url': url
@@ -359,12 +394,12 @@ async def handle_terabox_link(update: Update, context: CallbackContext) -> None:
         linkb = f"https://terafileshare.com/s/{link_text}"
         slink = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={link}"
         slinkb = f"https://terabox-player-one.vercel.app/?url=https://www.terabox.tech/play.html?url={linkb}"
-        share = f"https://t.me/share/url?url=https://t.me/MMPostEditorBot?start=terabox-{link_text}"
+        share = f"https://t.me/share/url?url=https://t.me/TeraBox_OnlineBot?start=terabox-{link_text}"
 
         button = [
-            [InlineKeyboardButton("Stream Server 1", url=slink)],
-            [InlineKeyboardButton("Stream Server 2", url=slinkb)],
-            [InlineKeyboardButton("Share This Video", url=share)]
+            [InlineKeyboardButton("🌐Stream Server 1🌐", url=slink)],
+            [InlineKeyboardButton("🌐Stream Server 2🌐", url=slinkb)],
+            [InlineKeyboardButton("◀Share▶", url=share)]
         ]
         reply_markup = InlineKeyboardMarkup(button)
 
@@ -373,6 +408,52 @@ async def handle_terabox_link(update: Update, context: CallbackContext) -> None:
             reply_markup=reply_markup,
             parse_mode='Markdown'
         )
+
+async def activate_premium(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    refferal_data = refferal_collection.find_one({"user_id": user_id})
+    if refferal_data:
+        # Activate premium features for the user
+        users_collection.update_one(
+            {"user_id": user_id},
+            {"$set": {"premium_until": datetime.now() + timedelta(days=1)}}
+        )
+        await query.edit_message_text("Premium features activated for 24 hours.")
+    else:
+        await query.edit_message_text("You do not have any refferal data.")
+
+async def balance(update: Update, context: CallbackContext) -> None:
+    user_id = update.effective_user.id
+    user_data = users_collection.find_one({"user_id": user_id})
+    if user_data:
+        premium_until = user_data.get("premium_until")
+        if premium_until:
+            await update.message.reply_text(f"Your premium features will expire on {premium_until.strftime('%Y-%m-%d %H:%M:%S')}.")
+        else:
+            await update.message.reply_text("You do not have any premium features.")
+    else:
+        await update.message.reply_text("You do not have any account data.")
+
+async def active(update: Update, context: CallbackContext) -> None:
+    user_id = update.effective_user.id
+    user_data = users_collection.find_one({"user_id": user_id})
+    if user_data:
+        premium_until = user_data.get("premium_until")
+        if premium_until:
+            # Activate premium features for the user
+            users_collection.update_one(
+                {"user_id": user_id},
+                {"$set": {"premium_until": datetime.now() + timedelta(days=1)}}
+            )
+            await update.message.reply_text("Premium features activated for 24 hours.")
+        else:
+            await update.message.reply_text("You do not have any premium features.")
+    else:
+        await update.message.reply_text("You do not have any account data.")
+
+
         
 def main() -> None:
     # Get the port from the environment variable or use default
@@ -388,6 +469,8 @@ def main() -> None:
     # Register the /users command handler
     app.add_handler(CommandHandler("totalusers", users_count))
 
+    app.add_handler(CommandHandler("balance", balance))
+
     # Register the /userss command handler
     app.add_handler(CommandHandler("users", userss))
 
@@ -399,6 +482,10 @@ def main() -> None:
 
     # Register the /broadcast command handler
     app.add_handler(CommandHandler("broadcast", broadcast))
+
+    # Register the /active command handler
+    app.add_handler(CommandHandler("active", active))
+
 
     # Run the bot using a webhook
     app.run_webhook(
