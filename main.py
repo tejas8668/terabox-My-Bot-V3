@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # Get the bot token and channel ID from environment variables
 TOKEN = os.getenv('BOT_TOKEN')
 CHANNEL_ID = os.getenv('CHANNEL_ID')
+WEBHOOK = os.getenv('WEBHOOK')
 
 # Define the /start command handler
 async def start(update: Update, context: CallbackContext) -> None:
@@ -458,7 +459,7 @@ async def active(update: Update, context: CallbackContext) -> None:
 def main() -> None:
     # Get the port from the environment variable or use default
     port = int(os.environ.get('PORT', 8080))  # Default to port 8080
-    webhook_url = f"https://painful-eustacia-chavan-013550df.koyeb.app/{TOKEN}"  # Replace with your server URL
+    webhook_url = f"{WEBHOOK}{TOKEN}"  # Replace with your server URL
 
     # Create the Application and pass it your bot's token
     app = ApplicationBuilder().token(TOKEN).build()
