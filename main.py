@@ -388,6 +388,32 @@ async def next_users(update: Update, context: CallbackContext) -> None:
     await query.edit_message_text("Click 'Next' to view more users", reply_markup=reply_markup)
     
 async def handle_terabox_link(update: Update, context: CallbackContext) -> None:
+    user = update.effective_user
+
+    if user.id in admin_ids:
+        # Admin ko verify karne ki zaroorat na ho
+        pass
+    else:
+        # User ko verify karne ki zaroorat hai
+        if VERIFICATION_REQUIRED and not await check_verification(user.id):
+            # User ko verify karne ki zaroorat hai
+            btn = [
+                [InlineKeyboardButton("Verify", url=await get_token(user.id, context.bot.username))],
+                [InlineKeyboardButton("How To Open Link & Verify", url="https://t.me/how_to_download_0011")]
+            ]
+            await update.message.reply_text(
+                text="🚨 <b>Token Expired!</b>\n\n"
+                     "<b>Timeout: 24 hours</b>\n\n"
+                     "Your access token has expired. Verify it to continue using the bot!\n\n"
+                     "<b>🔑 Why Tokens?</b>\n\n"
+                     "Tokens unlock premium features with a quick ad process. Enjoy 24 hours of uninterrupted access! 🌟\n\n"
+                     "<b>👉 Tap below to verify your token.</b>\n\n"
+                     "Thank you for your support! ❤️",
+                parse_mode='HTML',
+                reply_markup=InlineKeyboardMarkup(btn)
+            )
+            return
+
     text = update.message.text
     if text.startswith("/start terabox-"):
         link_text = text.replace("/start terabox-", "")
